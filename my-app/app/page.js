@@ -1,7 +1,8 @@
 "use client"
 import Todo from "@/Components/Todo";
 import { ToastContainer, toast } from 'react-toastify';
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function Home() {
 
@@ -10,6 +11,37 @@ export default function Home() {
     description: "",
   });
 
+  const [todoData, setTodoData] = useState([]);
+
+  const fetchTodos = async () => {
+    const response = await axios.get('/api');
+    console.log("data", response)
+    setTodoData(response.data.todos)
+  }
+
+  const deleteTodo = async (id) => {
+    const response = await axios.delete('/api', {
+      params: {
+        mongoId: id
+      }
+    })
+    toast.success(response.data.msg);
+    fetchTodos();
+  }
+ const completeTodo = async (id) => {
+    const response = await axios.put('/api',{}, {
+      params: {
+        mongoId: id
+      }
+    })
+    toast.success(response.data.msg);
+    fetchTodos();
+  }
+
+
+  useEffect(() => {
+    fetchTodos();
+  }, [])
   const onChangeHandler = (e) => {
     const name = e.target.name;
     const value = e.target.value;
@@ -21,9 +53,13 @@ export default function Home() {
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     try {
-
-
-      toast.success("Success");
+      const response = await axios.post('/api', formData);
+      toast.success(response.data.msg);
+      setFormData({
+        title: "",
+        description: "",
+      })
+      await fetchTodos();
     } catch (error) {
       toast.error("Error")
     }
@@ -50,9 +86,9 @@ export default function Home() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-            <Todo />
-            <Todo />
-            <Todo />
+            {todoData.map((item, index) => {
+              return <Todo key={index} id={index} title={item.title} description={item.description} complete={item.isCompleted} mongoId={item._id} deleteTodo={deleteTodo} completeTodo={completeTodo}/>
+            })}
           </tbody>
         </table>
       </div>
